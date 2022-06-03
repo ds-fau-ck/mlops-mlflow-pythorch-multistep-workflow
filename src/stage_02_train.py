@@ -15,7 +15,7 @@ import mlflow.pytorch
 
 
 
-STAGE = "STAGE_NAME" ## <<< change stage name 
+STAGE = "TRAINING" ## <<< change stage name 
 
 logging.basicConfig(
     filename=os.path.join("logs", 'running_logs.log'), 
@@ -60,7 +60,9 @@ def main(config_path):
         train_(config,scripted_model, config["DEVICE"], train_loader, optimizer, epoch)
         scheduler.step()
 
-
+    with mlflow.start_run(run_name="training") as run:
+        mlflow.log_params(config["params"])
+        mlflow.pytorch.log_model(model, "model")
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
