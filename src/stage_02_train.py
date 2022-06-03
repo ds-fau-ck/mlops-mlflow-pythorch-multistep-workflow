@@ -5,6 +5,14 @@ from tqdm import tqdm
 import logging
 from src.utils.common import read_yaml, create_directories
 import random
+from src.utils.model_utils import ConvNet, load_binary
+import random
+import torch
+import torch.nn.functional as F
+from torch.optim.lr_scheduler import StepLR
+import mlflow
+import mlflow.pytorch
+
 
 
 STAGE = "STAGE_NAME" ## <<< change stage name 
@@ -16,12 +24,42 @@ logging.basicConfig(
     filemode="a"
     )
 
+def train_(config, model, device, train_loader, optimizer, epoch):
+    model.train()
+    for batch_idx,(data, target) in enumerate(train_loader):
+        data, target=data.to(device), target.to(device)
+        optimizer.zero_grad()
+        pred=model.forward(data)
+        loss=F.cross_entropy(pred, target)
+        loss.backward()
+        optimizer.step()
+        if batch_idx % config["params"]["LOG_INTERVAL"]==0:
+             print(f"Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ({100.0 * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}")
 
-def main(config_path, params_path):
+
+    
+def main(config_path):
     ## read config files
     config = read_yaml(config_path)
-    params = read_yaml(params_path)
-    pass
+    
+    device_config={"DEVICE": "cuda" if torch.cuda.is_available() else "cpu"}
+    config.update(device_config)
+
+    model=ConvNet().to(config["DEVICE"])
+    scripted_model=torch.jit.script(model)
+    optimizer=torch.optim.Adam(model.parameters(), lr=config["params"]["LR"])
+    scheduler=StepLR(optimizer, step_size=1, gamma=config["params"]["GAMA"])
+
+    artifacts=config["artifacts"]
+    model_config_dir = os.path.join(artifacts["artifacts_dir"], artifacts["model_config_dir"])
+    train_loader_bin_file = artifacts["train_loader_bin"]
+    train_loader_bin_filepath = os.path.join(model_config_dir, train_loader_bin_file)
+    train_loader = load_binary(train_loader_bin_filepath)
+
+    for epoch in range(1, config["params"]["EPOCHS"] +1):
+        train_(config,scripted_model, config["DEVICE"], train_loader, optimizer, epoch)
+        scheduler.step()
+
 
 
 if __name__ == '__main__':
@@ -33,7 +71,7 @@ if __name__ == '__main__':
     try:
         logging.info("\n********************")
         logging.info(f">>>>> stage {STAGE} started <<<<<")
-        main(config_path=parsed_args.config, params_path=parsed_args.params)
+        main(config_path=parsed_args.config)
         logging.info(f">>>>> stage {STAGE} completed!<<<<<\n")
     except Exception as e:
         logging.exception(e)
