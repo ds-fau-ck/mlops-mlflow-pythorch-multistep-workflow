@@ -18,4 +18,4 @@ params:
   SEED: 42
   LOG_INTERVAL: 10 
   DRY_RUN: False 
-  EPOCHS: 10
+  EPOCHS: 1
