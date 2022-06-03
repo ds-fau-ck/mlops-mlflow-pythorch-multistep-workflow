@@ -3,6 +3,8 @@ tqdm
 pandas
 numpy
 PyYAML
+mlflow
+torch
 
 ### local packages -
-# -e . # << uncomment this to install from setup.py
+-e . # << uncomment this to install from setup.py
