@@ -7,6 +7,7 @@ mlflow
 joblib
 notebook
 scikit-learn-1.0.2
+matplotlib
 
 ### local packages -
 -e . # << uncomment this to install from setup.py
