@@ -5,6 +5,8 @@ numpy
 PyYAML
 mlflow
 joblib
+notebook
+scikit-learn-1.0.2
 
 ### local packages -
 -e . # << uncomment this to install from setup.py
